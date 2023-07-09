@@ -21,44 +21,60 @@ import com.pennant.prodmtr.service.Interface.ModuleService;
 public class ModuleController {
 	private static final Logger logger = LoggerFactory.getLogger(ModuleController.class);
 
-	ModuleService moduleService;
-	@Autowired
-	FunctionalUnitService Funitservice;
+	private final ModuleService moduleService;
+	private final FunctionalUnitService Funitservice;
 
 	@Autowired
-	public ModuleController(ModuleService moduleService) {
+	public ModuleController(ModuleService moduleService, FunctionalUnitService Funitservice) {
 		this.moduleService = moduleService;
+		this.Funitservice = Funitservice;
 	}
 
-	// Method to get create module jsp page
+	// Method to get create module JSP page
 	@RequestMapping(value = "/createModule", method = RequestMethod.GET)
 	public String createModule(Model model) {
-		logger.info("module added");
-
-		return "Addmodule";
+		try {
+			logger.info("Adding a new module");
+			// Retrieve the functional units for populating the select dropdown
+			List<FunctionalUnitDTO> functionalUnits = Funitservice.getAllFunctionalUnits();
+			model.addAttribute("functionalUnits", functionalUnits);
+			return "Addmodule";
+		} catch (Exception e) {
+			logger.error("Error occurred while getting create module page", e);
+			model.addAttribute("error", "An error occurred while getting create module page.");
+			return "errorPage";
+		}
 	}
 
-	// Method for creating module in project
+	// Method for creating a module in a project
 	@RequestMapping(value = "/createModulesuccess", method = RequestMethod.POST)
-	public String Createmodulesuccess(@Validated ModuleInput moduleinput, Model model) {
-
-		moduleService.createModule(moduleinput);
-		logger.info("module success");
-
-		Integer projectId = moduleinput.getModule_proj_id();
-		return "redirect:/moduleDetailsByProjId?projectId=" + projectId;
-
+	public String createModuleSuccess(@Validated ModuleInput moduleInput, Model model) {
+		try {
+			// Create the module
+			moduleService.createModule(moduleInput);
+			logger.info("Module created successfully");
+			Integer projectId = moduleInput.getModule_proj_id();
+			return "redirect:/moduleDetailsByProjId?projectId=" + projectId;
+		} catch (Exception e) {
+			logger.error("Error occurred while creating module", e);
+			model.addAttribute("error", "An error occurred while creating the module.");
+			return "errorPage";
+		}
 	}
 
-	// Method for getting modules using project id
+	// Method for getting module details by project ID
 	@RequestMapping(value = "/moduleDetailsByProjId", method = RequestMethod.GET)
 	public String getModuleDetailsByProjId(@RequestParam("projectId") Integer projectId, Model model) {
-
-		List<ModuleDTO> modules = moduleService.getModuleByProjId(projectId);
-
-		model.addAttribute("moduleDTO", modules);
-		logger.info("module details by projects");
-		return "moduleDetailsbyProjId";
+		try {
+			// Get the modules for the specified project ID
+			List<ModuleDTO> modules = moduleService.getModuleByProjId(projectId);
+			model.addAttribute("moduleDTO", modules);
+			logger.info("Module details loaded for project ID: " + projectId);
+			return "moduleDetailsbyProjId";
+		} catch (Exception e) {
+			logger.error("Error occurred while getting module details by project ID", e);
+			model.addAttribute("error", "An error occurred while getting module details by project ID.");
+			return "errorPage";
+		}
 	}
-
 }
